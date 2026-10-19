@@ -264,6 +264,18 @@ export async function runNonInteractivePrompt(input: Input) {
       if (!promoted) continue
       if (finalizing && !event.type.startsWith("session.execution.")) continue
 
+      // A provider retry-after can hold the run for minutes or hours. Report each scheduled retry so
+      // callers can tell a backoff from a stuck process and decide whether to keep waiting.
+      if (event.type === "session.retry.scheduled") {
+        if (emit("retry", time, { attempt: event.data.attempt, next: event.data.at, error: event.data.error })) continue
+        const seconds = Math.max(0, Math.ceil((event.data.at - Date.now()) / 1000))
+        const wait = seconds < 60 ? `${seconds}s` : `${Math.ceil(seconds / 60)}m`
+        UI.println(
+          `${UI.Style.TEXT_WARNING_BOLD}Retrying${UI.Style.TEXT_NORMAL} in ${wait} (attempt ${event.data.attempt}): ${event.data.error.message}`,
+        )
+        continue
+      }
+
       if (event.type === "session.step.started") {
         const part = {
           id: partID(event.id),
