@@ -480,6 +480,25 @@ describe("runNonInteractivePrompt", () => {
     expect(output.stderr).toBe("")
   })
 
+  test("V1 JSON output flushes step_start before a scheduled retry", async () => {
+    const output = await capture({
+      compatibility: "v1",
+      format: "json",
+      turn: (messageID) => [prompted(messageID), stepStarted(), retryScheduled(1_800_000), settled()],
+    })
+
+    expect(
+      output.stdout
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line)),
+    ).toEqual([
+      expect.objectContaining({ type: "step_start", part: expect.objectContaining({ type: "step-start" }) }),
+      expect.objectContaining({ type: "retry", attempt: 2, next: 1_800_000, error: rateLimited }),
+    ])
+    expect(output.stderr).toBe("")
+  })
+
   test("reports scheduled provider retries on stderr in default output", async () => {
     const output = await capture({
       turn: (messageID) => [prompted(messageID), retryScheduled(Date.now() + 3_600_000), settled()],
