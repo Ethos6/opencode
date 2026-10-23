@@ -43,6 +43,21 @@
 
 ---
 
+## How it works
+
+OpenCode connects a coding session to a selected model and agent. The agent uses the workspace context and available tools to inspect or change files, run commands, and return a result for the developer to review.
+
+```mermaid
+flowchart TD
+    A[Developer task] --> B[Select agent and model]
+    B --> C[Gather workspace context]
+    C --> D[Model proposes response or tool call]
+    D --> E{Tool call?}
+    E -->|Yes| F[Run permitted workspace action]
+    F --> C
+    E -->|No| G[Present changes for review]
+```
+
 ### Installation
 
 ```bash
